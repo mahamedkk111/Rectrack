@@ -1,4 +1,4 @@
-name: Build Android APK (Direct Install)
+name: Build Android APK (Direct Install - With Cache)
 
 on:
   push:
@@ -9,11 +9,32 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Build APK using Buildozer (no Docker)
+    name: Build APK using Buildozer (no Docker, with caching)
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # -------------------------------
+      # CACHE STEPS
+      # -------------------------------
+      - name: Cache Buildozer and SDK files
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.buildozer
+          key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-buildozer-
+
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'buildozer.spec') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      # -------------------------------
 
       - name: Install system dependencies
         run: |
@@ -26,10 +47,22 @@ jobs:
         run: |
           mkdir -p ~/.buildozer/android/platform/android-sdk
           cd ~/.buildozer/android/platform/android-sdk
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdtools.zip
-          unzip cmdtools.zip -d cmdline-tools
-          yes | cmdline-tools/bin/sdkmanager --sdk_root=. "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;23.1.7779620"
-          yes | cmdline-tools/bin/sdkmanager --licenses
+
+          if [ ! -d "cmdline-tools/latest" ]; then
+            echo "📦 Downloading Android command line tools..."
+            wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdtools.zip
+            unzip -o cmdtools.zip -d cmdline-tools
+            mkdir -p cmdline-tools/latest
+            mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+          fi
+
+          export ANDROID_SDK_ROOT=$HOME/.buildozer/android/platform/android-sdk
+          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools:$PATH
+
+          echo "📝 Accepting Android licenses..."
+          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT --licenses || true
+          echo "⬇️ Installing SDK components..."
+          yes | sdkmanager --sdk_root=$ANDROID_SDK_ROOT "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;23.1.7779620"
 
       - name: Verify buildozer.spec
         run: |
@@ -42,15 +75,17 @@ jobs:
 
       - name: Build the APK
         run: |
+          export PATH=$HOME/.local/bin:$PATH
+          echo "🚧 Starting Buildozer Android debug build..."
           buildozer -v android debug
 
       - name: List build output
         run: |
-          echo "Listing build output:"
+          echo "📁 Listing build output:"
           ls -la bin || true
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: pos-apk
-          path: bin/*.apk
+          path: bin/*.apk'
