@@ -14,26 +14,19 @@ steps:
 - name: Checkout repository
 uses: actions/checkout@v4
 
-- name: Ensure buildozer.spec present  
-    run: |  
-      echo "Listing repository root:"  
-      ls -la  
-      if [ ! -f buildozer.spec ]; then  
-        echo "ERROR: buildozer.spec not found at repo root" >&2  
-        exit 1  
-      fi  
+- name: Show repo files  
+    run: ls -la  
 
-  - name: Build APK with Buildozer (Docker)
-  run: |
-    docker run --rm \
-      -v "${{ github.workspace }}":/home/user/hostcwd \
-      -w /home/user/hostcwd \
-      kivy/buildozer \
-      /bin/bash -lc "
-        yes | sdkmanager --licenses || true && \
-        sudo chown -R user:user /home/user/hostcwd && \
-        buildozer -v android debug
-      "
+  - name: Build APK with buildozer (Docker)  
+    # Use the official kivy/buildozer image which has buildozer and android toolchain installed.  
+    # This step may take a long time the first run because Android SDK/NDK and dependencies will be downloaded.  
+    run: |  
+      docker run --rm \  
+        -v "${{ github.workspace }}":/home/user/hostcwd \  
+        -w /home/user/hostcwd \  
+        kivy/buildozer \  
+        /bin/bash -lc "buildozer -v android debug"  
+    # Note: the container will write build outputs into your repository workspace, so any artifacts are accessible to subsequent steps.  
 
   - name: List build output  
     run: |  
@@ -51,7 +44,9 @@ uses: actions/checkout@v4
         bin/*/*.apk  
         **/bin/*.apk  
 
-  - name: Print note  
+  - name: Print build log excerpt  
     if: always()  
     run: |  
-      echo "If build fails with other errors, check workflow logs for full buildozer output."
+      echo "Build finished. If you need the full log, check the workflow logs in Actions."
+
+What did you missed?
