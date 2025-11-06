@@ -1,52 +1,40 @@
 name: Build Android APK (Buildozer)
 
 on:
-push:
-branches:
-- main
-workflow_dispatch:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-build:
-name: Build APK using Buildozer Docker image
-runs-on: ubuntu-latest
-steps:
-- name: Checkout repository
-uses: actions/checkout@v4
+  build:
+    runs-on: ubuntu-latest
 
-- name: Show repo files  
-    run: ls -la  
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Build APK with buildozer (Docker)  
-    # Use the official kivy/buildozer image which has buildozer and android toolchain installed.  
-    # This step may take a long time the first run because Android SDK/NDK and dependencies will be downloaded.  
-    run: |  
-      docker run --rm \  
-        -v "${{ github.workspace }}":/home/user/hostcwd \  
-        -w /home/user/hostcwd \  
-        kivy/buildozer \  
-        /bin/bash -lc "buildozer -v android debug"  
-    # Note: the container will write build outputs into your repository workspace, so any artifacts are accessible to subsequent steps.  
+      - name: Verify spec file
+        run: |
+          if [ ! -f buildozer.spec ]; then
+            echo "❌ buildozer.spec missing"; exit 1
+          fi
+          ls -la
 
-  - name: List build output  
-    run: |  
-      echo "Listing bin and .buildozer folders"  
-      ls -la  
-      ls -la bin || true  
-      ls -la .buildozer || true  
+      - name: Build APK in Buildozer Docker
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}":/home/user/hostcwd \
+            -w /home/user/hostcwd \
+            kivy/buildozer \
+            /bin/bash -lc "
+              echo '✅ Accepting Android SDK licenses...'; \
+              yes | sdkmanager --licenses || true; \
+              echo '✅ Building APK...'; \
+              buildozer -v android debug
+            "
 
-  - name: Upload APK artifact(s)  
-    uses: actions/upload-artifact@v4  
-    with:  
-      name: pos-apk  
-      path: |  
-        bin/*.apk  
-        bin/*/*.apk  
-        **/bin/*.apk  
-
-  - name: Print build log excerpt  
-    if: always()  
-    run: |  
-      echo "Build finished. If you need the full log, check the workflow logs in Actions."
-
-What did you missed?
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: pos-apk
+          path: bin/*.apk
