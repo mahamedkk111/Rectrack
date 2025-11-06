@@ -25,11 +25,22 @@ jobs:
 
       - name: Build APK with buildozer (Docker)
         run: |
+          # Option A: call buildozer directly (preferred). The image's ENTRYPOINT is 'buildozer',
+          # so pass buildozer args directly as container CMD.
           docker run --rm \
             -v "${{ github.workspace }}":/home/user/hostcwd \
             -w /home/user/hostcwd \
             kivy/buildozer \
-            /bin/bash -lc "buildozer -v android debug"
+            -v android debug
+
+          # Option B (alternate): override entrypoint to run a shell, then run buildozer.
+          # Uncomment and use if you need a shell environment inside container.
+          # docker run --rm \
+          #   --entrypoint /bin/bash \
+          #   -v "${{ github.workspace }}":/home/user/hostcwd \
+          #   -w /home/user/hostcwd \
+          #   kivy/buildozer \
+          #   -c "buildozer -v android debug"
 
       - name: List build output
         run: |
@@ -50,4 +61,4 @@ jobs:
       - name: Print note
         if: always()
         run: |
-          echo "If build fails with other errors, check workflow logs for full buildozer output."
+          echo "Build step finished (success or failure). Check logs for details."
