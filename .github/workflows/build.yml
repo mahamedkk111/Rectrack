@@ -1,38 +1,50 @@
-name: Build Kivy APK
+name: Build Android APK (Buildozer)
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
+    name: Build APK using Buildozer Docker image
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install system dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y python3-pip git zip unzip openjdk-17-jdk
-          pip install buildozer cython virtualenv
+      - name: Show repo files
+        run: ls -la
 
-      - name: Install Android SDK + NDK
+      - name: Build APK with buildozer (Docker)
+        # Use the official kivy/buildozer image which has buildozer and android toolchain installed.
+        # This step may take a long time the first run because Android SDK/NDK and dependencies will be downloaded.
         run: |
-          mkdir -p ~/.buildozer/android/platform/android-sdk
-          cd ~/.buildozer/android/platform/android-sdk
-          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdtools.zip
-          unzip cmdtools.zip -d cmdline-tools
-          yes | cmdline-tools/bin/sdkmanager --sdk_root=. "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;23.1.7779620"
+          docker run --rm \
+            -v "${{ github.workspace }}":/home/user/hostcwd \
+            -w /home/user/hostcwd \
+            kivy/buildozer \
+            /bin/bash -lc "buildozer -v android debug"
+        # Note: the container will write build outputs into your repository workspace, so any artifacts are accessible to subsequent steps.
 
-      - name: Build APK
+      - name: List build output
         run: |
-          buildozer android debug
+          echo "Listing bin and .buildozer folders"
+          ls -la
+          ls -la bin || true
+          ls -la .buildozer || true
 
-      - name: Upload built APK
+      - name: Upload APK artifact(s)
         uses: actions/upload-artifact@v4
         with:
-          name: kivy-apk
-          path: bin/*.apk
+          name: pos-apk
+          path: |
+            bin/*.apk
+            bin/*/*.apk
+            **/bin/*.apk
+
+      - name: Print build log excerpt
+        if: always()
+        run: |
+          echo "Build finished. If you need the full log, check the workflow logs in Actions."
