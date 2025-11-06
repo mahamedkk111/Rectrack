@@ -1,4 +1,4 @@
-name: Build Android APK (Buildozer)
+name: Build Android APK (Direct Install)
 
 on:
   push:
@@ -8,50 +8,49 @@ on:
 
 jobs:
   build:
-    name: Build APK using Buildozer Docker image
     runs-on: ubuntu-latest
+    name: Build APK using Buildozer (no Docker)
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Ensure buildozer.spec present
+      - name: Install system dependencies
         run: |
-          echo "Listing repository root:"
-          ls -la
+          sudo apt update
+          sudo apt install -y python3 python3-pip git zip unzip openjdk-17-jdk
+          pip install --upgrade pip
+          pip install cython buildozer virtualenv
+
+      - name: Setup Android SDK and NDK
+        run: |
+          mkdir -p ~/.buildozer/android/platform/android-sdk
+          cd ~/.buildozer/android/platform/android-sdk
+          wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdtools.zip
+          unzip cmdtools.zip -d cmdline-tools
+          yes | cmdline-tools/bin/sdkmanager --sdk_root=. "platform-tools" "platforms;android-33" "build-tools;33.0.2" "ndk;23.1.7779620"
+          yes | cmdline-tools/bin/sdkmanager --licenses
+
+      - name: Verify buildozer.spec
+        run: |
           if [ ! -f buildozer.spec ]; then
-            echo "❌ ERROR: buildozer.spec not found at repo root." >&2
+            echo "❌ buildozer.spec not found!"
             exit 1
           fi
-          echo "✅ buildozer.spec found."
+          echo "✅ buildozer.spec found!"
+          ls -la
 
-      - name: Build APK with Buildozer (Docker)
+      - name: Build the APK
         run: |
-          docker run --rm \
-            -v "${{ github.workspace }}":/home/user/hostcwd \
-            -w /home/user/hostcwd \
-            kivy/buildozer \
-            -v android debug
+          buildozer -v android debug
 
       - name: List build output
         run: |
           echo "Listing build output:"
-          ls -la
           ls -la bin || true
-          ls -la .buildozer || true
 
-      - name: Upload APK artifact(s)
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: pos-apk
-          path: |
-            bin/*.apk
-            bin/*/*.apk
-            **/bin/*.apk
-
-      - name: Print note
-        if: always()
-        run: |
-          echo "✅ Build process complete!"
-          echo "➡️ If it succeeded, download the APK under 'Artifacts → pos-apk.zip' in the Actions tab."
-          echo "⚠️ If it failed, open the full logs and search for 'ERROR' lines."
+          path: bin/*.apk
