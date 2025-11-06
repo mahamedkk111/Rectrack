@@ -1,9 +1,9 @@
 [app]
 # (str) Title of your application
-title = POS App
+title = ctrack App
 
 # (str) Package name (will be used as the java package name)
-package.name = pos_app
+package.name = ctracj_app
 
 # (str) Package domain (reverse domain style)
 package.domain = org.example
@@ -16,7 +16,6 @@ source.include_exts = py,kv,kvlang,png,jpg,xml,db,csv
 
 # (str) Application versioning (must be set)
 version = 0.1
-# alternatively you can use version.regex
 
 # (list) Application requirements
 requirements = python3,kivy==2.1.0,xlsxwriter
@@ -27,7 +26,7 @@ orientation = portrait
 # (bool) Enable fullscreen (default False)
 fullscreen = 0
 
-# (str) Android permissions - adjust as needed (storage access on newer Android is subject to scoped storage rules)
+# (str) Android permissions - adjust as needed
 android.permissions = INTERNET,WRITE_EXTERNAL_STORAGE,READ_EXTERNAL_STORAGE
 
 # (int) Android API to use (compile SDK)
