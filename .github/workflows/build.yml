@@ -30,12 +30,8 @@ jobs:
           docker run --rm \
             -v "${{ github.workspace }}":/home/user/hostcwd \
             -w /home/user/hostcwd \
-            kivy/buildozer bash -c "
-              echo '✅ Accepting Android SDK licenses...' && \
-              yes | sdkmanager --licenses || true && \
-              echo '✅ Starting Buildozer Android build...' && \
-              buildozer -v android debug
-            "
+            kivy/buildozer \
+            -v android debug
 
       - name: List build output
         run: |
