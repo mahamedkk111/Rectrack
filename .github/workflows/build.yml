@@ -2,39 +2,60 @@ name: Build Android APK (Buildozer)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build APK using Buildozer Docker image
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Verify spec file
+      - name: Ensure buildozer.spec present
         run: |
-          if [ ! -f buildozer.spec ]; then
-            echo "❌ buildozer.spec missing"; exit 1
-          fi
+          echo "Listing repository root:"
           ls -la
+          if [ ! -f buildozer.spec ]; then
+            echo "❌ ERROR: buildozer.spec not found at repo root." >&2
+            exit 1
+          fi
+          echo "✅ buildozer.spec found."
 
-      - name: Build APK in Buildozer Docker
+      - name: Build APK with Buildozer (Docker)
         run: |
           docker run --rm \
             -v "${{ github.workspace }}":/home/user/hostcwd \
             -w /home/user/hostcwd \
-            kivy/buildozer \
-            /bin/bash -lc "
-              echo '✅ Accepting Android SDK licenses...'; \
-              yes | sdkmanager --licenses || true; \
-              echo '✅ Building APK...'; \
+            kivy/buildozer bash -c "
+              echo '✅ Accepting Android SDK licenses...' && \
+              yes | sdkmanager --licenses || true && \
+              echo '✅ Starting Buildozer Android build...' && \
               buildozer -v android debug
             "
 
-      - name: Upload APK
+      - name: List build output
+        run: |
+          echo "Listing build output:"
+          ls -la
+          ls -la bin || true
+          ls -la .buildozer || true
+
+      - name: Upload APK artifact(s)
         uses: actions/upload-artifact@v4
         with:
           name: pos-apk
-          path: bin/*.apk
+          path: |
+            bin/*.apk
+            bin/*/*.apk
+            **/bin/*.apk
+
+      - name: Print note
+        if: always()
+        run: |
+          echo "✅ Build process complete!"
+          echo "➡️ If it succeeded, download the APK under 'Artifacts → pos-apk.zip' in the Actions tab."
+          echo "⚠️ If it failed, open the full logs and search for 'ERROR' lines."
