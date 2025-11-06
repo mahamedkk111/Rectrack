@@ -1,58 +1,54 @@
 name: Build Android APK (Buildozer)
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+push:
+branches:
+- main
+workflow_dispatch:
 
 jobs:
-  build:
-    name: Build APK using Buildozer Docker image
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+build:
+name: Build APK using Buildozer Docker image
+runs-on: ubuntu-latest
+steps:
+- name: Checkout repository
+uses: actions/checkout@v4
 
-      - name: Ensure buildozer.spec present
-        run: |
-          echo "Listing repository root:"
-          ls -la
-          if [ ! -f buildozer.spec ]; then
-            echo "ERROR: buildozer.spec not found at repo root" >&2
-            exit 1
-          fi
+- name: Ensure buildozer.spec present  
+    run: |  
+      echo "Listing repository root:"  
+      ls -la  
+      if [ ! -f buildozer.spec ]; then  
+        echo "ERROR: buildozer.spec not found at repo root" >&2  
+        exit 1  
+      fi  
 
-      - name: Build APK with buildozer (Docker)
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}":/home/user/hostcwd \
-            -w /home/user/hostcwd \
-            kivy/buildozer \
-            /bin/bash -lc "
-              echo '✅ Accepting Android SDK licenses...' && \
-              yes | sdkmanager --licenses || true && \
-              echo '✅ Building APK...' && \
-              buildozer -v android debug
-            "
+  - name: Build APK with buildozer (Docker)  
+    run: |  
+      docker run --rm \  
+        -v "${{ github.workspace }}":/home/user/hostcwd \  
+        -w /home/user/hostcwd \  
+        kivy/buildozer \  
+        /bin/bash -lc "buildozer -v android debug" 
+        yes | sdkmanager --licenses || true
 
-      - name: List build output
-        run: |
-          echo "Listing bin and .buildozer folders"
-          ls -la
-          ls -la bin || true
-          ls -la .buildozer || true
+  - name: List build output  
+    run: |  
+      echo "Listing bin and .buildozer folders"  
+      ls -la  
+      ls -la bin || true  
+      ls -la .buildozer || true  
 
-      - name: Upload APK artifact(s)
-        uses: actions/upload-artifact@v4
-        with:
-          name: pos-apk
-          path: |
-            bin/*.apk
-            bin/*/*.apk
-            **/bin/*.apk
+  - name: Upload APK artifact(s)  
+    uses: actions/upload-artifact@v4  
+    with:  
+      name: pos-apk  
+      path: |  
+        bin/*.apk  
+        bin/*/*.apk  
+        **/bin/*.apk  
 
-      - name: Print note
-        if: always()
-        run: |
-          echo "✅ If build fails with other errors, check workflow logs for full buildozer output."
+  - name: Print note  
+    if: always()  
+    run: |  
+      echo "If build fails with other errors, check workflow logs for full buildozer output."
