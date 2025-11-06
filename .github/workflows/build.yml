@@ -23,14 +23,17 @@ uses: actions/checkout@v4
         exit 1  
       fi  
 
-  - name: Build APK with buildozer (Docker)  
-    run: |  
-      docker run --rm \  
-        -v "${{ github.workspace }}":/home/user/hostcwd \  
-        -w /home/user/hostcwd \  
-        kivy/buildozer \  
-        /bin/bash -lc "buildozer -v android debug" 
-        yes | sdkmanager --licenses || true
+  - name: Build APK with Buildozer (Docker)
+  run: |
+    docker run --rm \
+      -v "${{ github.workspace }}":/home/user/hostcwd \
+      -w /home/user/hostcwd \
+      kivy/buildozer \
+      /bin/bash -lc "
+        yes | sdkmanager --licenses || true && \
+        sudo chown -R user:user /home/user/hostcwd && \
+        buildozer -v android debug
+      "
 
   - name: List build output  
     run: |  
