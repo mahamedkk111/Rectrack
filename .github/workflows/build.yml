@@ -24,7 +24,10 @@ jobs:
             libncurses5-dev libffi-dev libssl-dev
           pip install buildozer cython==0.29.37
 
-      - name: Build APK
+      - name: Build with Buildozer
+        env:
+          ANDROID_SDK_ROOT: ""
+          ANDROID_NDK_HOME: ""
         run: buildozer android debug
 
       - name: Upload APK
