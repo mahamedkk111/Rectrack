@@ -16,7 +16,7 @@ version         = 1.0
 # ── Dependencies ──────────────────────────────────────────────────────────────
 # KivyMD must be pinned to a version compatible with your Kivy version.
 # Kivy 2.3.x  →  KivyMD 1.2.0
-requirements    = python3,kivy==2.3.0,kivymd==1.2.0,sqlite3,xlsxwriter,reportlab
+requirements    = python3,kivy==2.3.0,kivymd==1.2.0,xlsxwriter,reportlab
 
 # ── Android permissions ───────────────────────────────────────────────────────
 android.permissions = WRITE_EXTERNAL_STORAGE,\
