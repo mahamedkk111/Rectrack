@@ -13,7 +13,6 @@ version         = 6.0
 # Pillow removed — KivyMD includes what it needs
 # pyjnius pinned to version with Android wheels
 requirements = python3,kivy==2.3.0,kivymd==1.2.0,xlsxwriter,reportlab
-
 android.permissions = MANAGE_EXTERNAL_STORAGE
 
 android.accept_sdk_license = True
