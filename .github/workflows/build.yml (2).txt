@@ -1,0 +1,82 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip zip unzip \
+            openjdk-17-jdk \
+            autoconf libtool pkg-config \
+            zlib1g-dev libncurses5-dev \
+            libffi-dev libssl-dev \
+            cmake ninja-build \
+            libltdl-dev \
+            lld
+
+      - name: Install Python build tools
+        run: |
+          pip install --upgrade pip setuptools
+          pip install buildozer==1.5.0 cython==0.29.37
+
+      - name: Setup Android SDK licenses
+        run: |
+          mkdir -p $ANDROID_SDK_ROOT/licenses
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" > $ANDROID_SDK_ROOT/licenses/android-sdk-license
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+          echo "d975f751698a77b662f1254ddbeed3901e976f5a" > $ANDROID_SDK_ROOT/licenses/android-sdk-preview-license
+          echo "33b6a2b64607f11b759f320ef9dff4ae5c47d97a" >> $ANDROID_SDK_ROOT/licenses/android-sdk-license
+          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+
+      - name: Cache Buildozer directory
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+          restore-keys: |
+            buildozer-${{ runner.os }}-
+
+      - name: Build APK
+        env:
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+        run: |
+          buildozer -v android debug 2>&1 | tee build.log
+          echo "Exit code: $?"
+
+      - name: Check APK output
+        run: |
+          echo "=== Contents of bin/ ==="
+          ls -la bin/ 2>/dev/null || echo "bin/ folder not found"
+          echo "=== Last 50 lines of build log ==="
+          tail -50 build.log
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: POS-APK
+          path: bin/*.apk
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7
