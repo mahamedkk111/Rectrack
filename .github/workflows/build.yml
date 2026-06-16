@@ -27,6 +27,9 @@ jobs:
             libffi-dev libssl-dev \
             cmake ninja-build \
             libltdl-dev \
+            libgl1-mesa-dev \
+            libgles2-mesa-dev \
+            mesa-common-dev \
             lld
 
       - name: Install Python build tools
@@ -56,14 +59,6 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
           buildozer -v android debug 2>&1 | tee build.log
-          echo "Exit code: $?"
-
-      - name: Check APK output
-        run: |
-          echo "=== Contents of bin/ ==="
-          ls -la bin/ 2>/dev/null || echo "bin/ folder not found"
-          echo "=== Last 50 lines of build log ==="
-          tail -50 build.log
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
