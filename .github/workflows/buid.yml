@@ -1,4 +1,4 @@
-name: Build Flutter APK
+name: Build Flutter APk
 
 on:
   push:
